@@ -55,6 +55,38 @@ class LTexture
 		int mHeight;
 };
 
+//The application time based timer
+class LTimer
+{
+    public:
+		//Initializes variables
+		LTimer();
+
+		//The various clock actions
+		void start();
+		void stop();
+		void pause();
+		void unpause();
+
+		//Gets the timer's time
+		Uint32 getTicks();
+
+		//Checks the status of the timer
+		bool isStarted();
+		bool isPaused();
+
+    private:
+		//The clock time when the timer started
+		Uint32 mStartTicks;
+
+		//The ticks stored when the timer was paused
+		Uint32 mPausedTicks;
+
+		//The timer status
+		bool mPaused;
+		bool mStarted;
+};
+
 class Stone
 {
 	public : 
@@ -70,6 +102,32 @@ class Stone
 		pair<int,int> StonePos;
 
 };
+
+class Dog
+{
+	public :
+		static const int DOG_WIDTH = 48;
+		static const int DOG_HEIGHT = 48;
+		static const int JUMP_VEL = -15.0f;
+		static const int GRAVITY = 1.0f;
+
+		Dog();
+
+		void jump();
+		void ApplyGravitationalForce();
+
+
+		pair<int,int> getDogPos();
+		void setDogPos(int NewDogPosY);
+
+	private :
+		pair<int,int> DogPos;
+		float velocityY;
+		bool isJumping;
+			
+};
+
+
 
 
 //Starts up SDL and creates window
@@ -93,6 +151,8 @@ SDL_Rect gSpriteClips[ WALKING_ANIMATION_FRAMES ];
 LTexture gSpriteSheetTexture;
 
 LTexture gStoneTexture;
+
+LTimer gTimer;
 
 
 LTexture::LTexture()
@@ -206,6 +266,109 @@ int LTexture::getHeight()
 	return mHeight;
 }
 
+LTimer::LTimer()
+{
+    //Initialize the variables
+    mStartTicks = 0;
+    mPausedTicks = 0;
+
+    mPaused = false;
+    mStarted = false;
+}
+
+void LTimer::start()
+{
+    //Start the timer
+    mStarted = true;
+
+    //Unpause the timer
+    mPaused = false;
+
+    //Get the current clock time
+    mStartTicks = SDL_GetTicks();
+	mPausedTicks = 0;
+}
+
+void LTimer::stop()
+{
+    //Stop the timer
+    mStarted = false;
+
+    //Unpause the timer
+    mPaused = false;
+
+	//Clear tick variables
+	mStartTicks = 0;
+	mPausedTicks = 0;
+}
+
+void LTimer::pause()
+{
+    //If the timer is running and isn't already paused
+    if( mStarted && !mPaused )
+    {
+        //Pause the timer
+        mPaused = true;
+
+        //Calculate the paused ticks
+        mPausedTicks = SDL_GetTicks() - mStartTicks;
+		mStartTicks = 0;
+    }
+}
+
+void LTimer::unpause()
+{
+    //If the timer is running and paused
+    if( mStarted && mPaused )
+    {
+        //Unpause the timer
+        mPaused = false;
+
+        //Reset the starting ticks
+        mStartTicks = SDL_GetTicks() - mPausedTicks;
+
+        //Reset the paused ticks
+        mPausedTicks = 0;
+    }
+}
+
+Uint32 LTimer::getTicks()
+{
+	//The actual timer time
+	Uint32 time = 0;
+
+    //If the timer is running
+    if( mStarted )
+    {
+        //If the timer is paused
+        if( mPaused )
+        {
+            //Return the number of ticks when the timer was paused
+            time = mPausedTicks;
+        }
+        else
+        {
+            //Return the current time minus the start time
+            time = SDL_GetTicks() - mStartTicks;
+        }
+    }
+
+    return time;
+}
+
+bool LTimer::isStarted()
+{
+	//Timer is running and paused or unpaused
+    return mStarted;
+}
+
+bool LTimer::isPaused()
+{
+	//Timer is running and paused
+    return mPaused && mStarted;
+}
+
+
 Stone::Stone()
 {
 	StonePos.first=SCREEN_WIDTH;
@@ -219,11 +382,53 @@ void Stone::UpdateStonePos()
 		StonePos.first=SCREEN_WIDTH;
 	}
 }
-
 void Stone::renderStone()
 {
 	gStoneTexture.render(StonePos.first,StonePos.second);
 }
+
+Dog::Dog()
+{
+	DogPos.first=( SCREEN_WIDTH - 48 ) *1/4;
+	DogPos.second=( SCREEN_HEIGHT - 48 ) *3/4;
+	velocityY=0;
+	isJumping=false;
+}
+
+void Dog::jump()
+{
+	if (!isJumping) {
+        isJumping = true;
+        velocityY = JUMP_VEL; // Thiết lập vận tốc nhảy
+    }
+}
+
+void Dog::ApplyGravitationalForce()
+{
+	if (isJumping) {
+        velocityY += GRAVITY; // Tăng vận tốc rơi xuống
+        DogPos.second += velocityY;
+
+        // Khi chạm đất, đặt lại trạng thái
+        if (DogPos.second >= (SCREEN_HEIGHT - DOG_HEIGHT) * 3 / 4) {
+            DogPos.second = (SCREEN_HEIGHT - DOG_HEIGHT) * 3 / 4;
+            velocityY = 0;
+            isJumping = false;
+        }
+    }
+}
+
+
+pair<int,int> Dog :: getDogPos()
+{
+	return DogPos;
+}
+
+void Dog::setDogPos(int NewDogPosY)
+{
+	DogPos.second=NewDogPosY;
+}
+
 
 
 bool init()
@@ -349,11 +554,14 @@ int main( int argc, char* args[] )
 		{
 			//Main loop flag
 			bool quit = false;
+			bool isJump = true;
 
 			//Event handler
 			SDL_Event e;
 
 			Stone stone;
+
+			Dog dog;
 
 			//Current animation frame
 			int frame = 0;
@@ -369,15 +577,26 @@ int main( int argc, char* args[] )
 					{
 						quit = true;
 					}
+					if (e.type == SDL_KEYDOWN)
+					{
+						if (e.key.keysym.sym == SDLK_SPACE)
+						{
+							dog.jump();
+							
+							
+						}
+						
+					}
 				}
-
+				dog.ApplyGravitationalForce();
+				
 				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
 				
 				//Render current frame
 				SDL_Rect* currentClip = &gSpriteClips[ frame / 8 ];
-				gSpriteSheetTexture.render( ( SCREEN_WIDTH - currentClip->w ) *1/4 , ( SCREEN_HEIGHT - currentClip->h ) *3/4, currentClip );
+				gSpriteSheetTexture.render( dog.getDogPos().first, dog.getDogPos().second, currentClip );
 
 				stone.UpdateStonePos();
 				stone.renderStone();
