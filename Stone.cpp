@@ -15,9 +15,13 @@ void Stone::UpdateStonePos()
 	}
 	StoneCollider={StonePos.first,StonePos.second,STONE_WIDTH,STONE_HEIGHT};
 }
+std::pair<int,int> Stone :: getStonePos()
+{
+	return StonePos;
+}
 void Stone::renderStone()
 {
-	gStoneTexture.render(StonePos.first,StonePos.second);
+	//gStoneTexture.render(StonePos.first,StonePos.second);
 }
 SDL_Rect Stone::getStoneCollider()
 {

@@ -1,7 +1,3 @@
-/*This source code copyrighted by Lazy Foo' Productions 2004-2024
-and may not be redistributed without written permission.*/
-
-//Using SDL, SDL_image, standard IO, and strings
 #include"Variables.h"
 
 using namespace std;
@@ -22,10 +18,17 @@ SDL_Window* gWindow = NULL;
 
 //Walking animation
 const int WALKING_ANIMATION_FRAMES = 8;
-SDL_Rect gSpriteClips[ WALKING_ANIMATION_FRAMES ];
-LTexture gSpriteSheetTexture;
+SDL_Rect gSpriteClipsDog[ WALKING_ANIMATION_FRAMES ];
+LTexture gSpriteSheetTextureDog;
+
 LTexture gTextTexture;
-LTexture gStoneTexture;
+
+const int STONE_ANIMATION_FRAMES = 18;
+SDL_Rect gSpriteClipsIceStone [STONE_ANIMATION_FRAMES];
+LTexture gSpriteSheetTextureIceStone;
+
+SDL_Rect gSpriteClipsLavaStone [STONE_ANIMATION_FRAMES];
+LTexture gSpriteSheetTextureLavaStone;
 
 //LTimer gTimer;
 bool init()
@@ -110,15 +113,8 @@ bool loadMedia()
 			success = false;
 		}
 	}
-
-	if(!gStoneTexture.loadFromFile("Stone/Stone.png"))
-	{
-		printf("Failed to load Stone Texture \n");
-		success = false;
-	}
-
 	//Load sprite sheet texture
-	if( !gSpriteSheetTexture.loadFromFile( "Dog/Dog.png" ) )
+	if( !gSpriteSheetTextureDog.loadFromFile( "Dog/Dog.png" ) )
 	{
 		printf( "Failed to load walking animation texture!\n" );
 		success = false;
@@ -126,10 +122,40 @@ bool loadMedia()
 	else
 	{
         for (int i = 0; i<8;i++){
-            gSpriteClips[ i ].x = i*48;
-            gSpriteClips[ i ].y =   0;
-            gSpriteClips[ i ].w =  48;
-            gSpriteClips[ i ].h =  48;
+            gSpriteClipsDog[ i ].x = i*48;
+            gSpriteClipsDog[ i ].y =   0;
+            gSpriteClipsDog[ i ].w =  48;
+            gSpriteClipsDog[ i ].h =  48;
+        }
+	}
+
+	if( !gSpriteSheetTextureIceStone.loadFromFile( "Stone/IceStone.png" ) )
+	{
+		printf( "Failed to load rolling icestone animation texture!\n" );
+		success = false;
+	}
+	else
+	{
+        for (int i = 0; i<18;i++){
+            gSpriteClipsIceStone[ i ].x = i*48;
+            gSpriteClipsIceStone[ i ].y =   0;
+            gSpriteClipsIceStone[ i ].w =  48;
+            gSpriteClipsIceStone[ i ].h =  48;
+        }
+	}
+
+	if( !gSpriteSheetTextureLavaStone.loadFromFile( "Stone/LavaStone.png" ) )
+	{
+		printf( "Failed to load rolling lavastone animation texture!\n" );
+		success = false;
+	}
+	else
+	{
+        for (int i = 0; i<18;i++){
+            gSpriteClipsLavaStone[ i ].x = i*48;
+            gSpriteClipsLavaStone[ i ].y =   0;
+            gSpriteClipsLavaStone[ i ].w =  48;
+            gSpriteClipsLavaStone[ i ].h =  48;
         }
 	}
 	
@@ -139,8 +165,10 @@ bool loadMedia()
 void close()
 {
 	//Free loaded images
-	gSpriteSheetTexture.free();
-	gStoneTexture.free();
+	gSpriteSheetTextureDog.free();
+	gSpriteSheetTextureIceStone.free();
+	gSpriteSheetTextureLavaStone.free();
+
 
 	gTextTexture.free();
 	TTF_CloseFont( gFont );
@@ -230,7 +258,8 @@ int main( int argc, char* args[] )
 			Dog dog;
 
 			//Current animation frame
-			int frame = 0;
+			int dogframe = 0;
+			int stoneframe = 0;
 
 			//While application is running
 			while( !quit )
@@ -261,34 +290,43 @@ int main( int argc, char* args[] )
 				SDL_RenderClear( gRenderer );
 				
 				//Render current frame
-				SDL_Rect* currentClip = &gSpriteClips[ frame / 8 ];
-				gSpriteSheetTexture.render( dog.getDogPos().first, dog.getDogPos().second, currentClip );
+				SDL_Rect* currentDogClip = &gSpriteClipsDog[ dogframe / 8 ];
+				gSpriteSheetTextureDog.render( dog.getDogPos().first, dog.getDogPos().second, currentDogClip );
 
+				SDL_Rect* currentStoneClip = &gSpriteClipsLavaStone[(stoneframe/2) % STONE_ANIMATION_FRAMES];;
 				stone.UpdateStonePos();
-				stone.renderStone();
+				gSpriteSheetTextureLavaStone.render(stone.getStonePos().first, stone.getStonePos().second, currentStoneClip);
 
 				//Update screen
 				SDL_RenderPresent( gRenderer );
 
-				if(checkCollision(dog.getDogCollider(),stone.getStoneCollider()))
+				/*if(checkCollision(dog.getDogCollider(),stone.getStoneCollider()))
 				{
 					SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
 					SDL_RenderClear(gRenderer);
 					gTextTexture.render((SCREEN_WIDTH - gTextTexture.getWidth()) / 2,(SCREEN_HEIGHT - gTextTexture.getHeight()) / 2);
-					gSpriteSheetTexture.render( dog.getDogPos().first, dog.getDogPos().second, currentClip );
+					gSpriteSheetTextureDog.render( dog.getDogPos().first, dog.getDogPos().second, currentClip );
 					stone.renderStone();
 					SDL_RenderPresent(gRenderer);
 					SDL_Delay(20000);
 					quit = true;
-				}
+				}*/
 
 				//Go to next frame
-				++frame;
+				++dogframe;
 
 				//Cycle animation
-				if( frame / 8 >= WALKING_ANIMATION_FRAMES )
+				if( dogframe / 8 >= WALKING_ANIMATION_FRAMES )
 				{
-					frame = 0;
+					dogframe = 0;
+				}
+
+				++stoneframe;
+
+				//Cycle animation
+				if( stoneframe/2 >= STONE_ANIMATION_FRAMES )
+				{
+					stoneframe = 0;
 				}
                 
 			}
