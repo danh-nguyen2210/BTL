@@ -8,6 +8,8 @@
 #include <ctime>
 #include <cmath>
 #include <algorithm>
+#include <string>
+#include <sstream>
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>

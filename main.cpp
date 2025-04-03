@@ -30,6 +30,10 @@ LTexture gSpriteSheetTextureIceStone;
 SDL_Rect gSpriteClipsLavaStone [STONE_ANIMATION_FRAMES];
 LTexture gSpriteSheetTextureLavaStone;
 
+LTexture gTimeTextTexture;
+LTexture gPausePromptTexture;
+LTexture gStartPromptTexture;
+
 //LTimer gTimer;
 bool init()
 {
@@ -97,7 +101,7 @@ bool loadMedia()
 	//Loading success flag
 	bool success = true;
 
-	gFont = TTF_OpenFont("Font/font.ttf",50);
+	gFont = TTF_OpenFont("Font/font.ttf",20);
 	if( gFont == NULL )
 	{
 		printf( "Failed to load lazy font! SDL_ttf Error: %s\n", TTF_GetError() );
@@ -106,10 +110,22 @@ bool loadMedia()
 	else
 	{
 		//Render text
-		SDL_Color textColor = { 0, 0, 0 };
+		SDL_Color textColor = { 0, 0, 0, 255 };
 		if( !gTextTexture.loadFromRenderedText( "Game Over!", textColor ) )
 		{
 			printf( "Failed to render text texture!\n" );
+			success = false;
+		}
+		if( !gStartPromptTexture.loadFromRenderedText( "Press S to Start or Stop the Timer", textColor ) )
+		{
+			printf( "Unable to render start/stop prompt texture!\n" );
+			success = false;
+		}
+		
+		//Load pause prompt texture
+		if( !gPausePromptTexture.loadFromRenderedText( "Press P to Pause or Unpause the Timer", textColor ) )
+		{
+			printf( "Unable to render pause/unpause prompt texture!\n" );
 			success = false;
 		}
 	}
@@ -168,6 +184,10 @@ void close()
 	gSpriteSheetTextureDog.free();
 	gSpriteSheetTextureIceStone.free();
 	gSpriteSheetTextureLavaStone.free();
+
+	gTimeTextTexture.free();
+	gStartPromptTexture.free();
+	gPausePromptTexture.free();
 
 
 	gTextTexture.free();
@@ -249,6 +269,7 @@ int main( int argc, char* args[] )
 			//Main loop flag
 			bool quit = false;
 			bool isJump = true;
+			bool isgameover = false;
 
 			//Event handler
 			SDL_Event e;
@@ -257,13 +278,22 @@ int main( int argc, char* args[] )
 
 			Dog dog;
 
+			SDL_Color textColor = { 0, 0, 0, 255 };
+
+			LTimer timer;
+
+			std::stringstream timeText;
+
 			//Current animation frame
 			int dogframe = 0;
 			int stoneframe = 0;
 
+			timer.start();
+
 			//While application is running
 			while( !quit )
 			{
+				
 				//Handle events on queue
 				while( SDL_PollEvent( &e ) != 0 )
 				{
@@ -272,62 +302,86 @@ int main( int argc, char* args[] )
 					{
 						quit = true;
 					}
-					if (e.type == SDL_KEYDOWN)
+					
+					if (e.type == SDL_KEYDOWN&&!isgameover)
 					{
 						if (e.key.keysym.sym == SDLK_SPACE)
 						{
 							dog.jump();
-							
-							
+						}
+						//Pause/unpause
+						if( e.key.keysym.sym == SDLK_p )
+						{
+							if( timer.isPaused() )
+							{
+								timer.unpause();
+							}
+							else
+							{
+								timer.pause();
+							}
 						}
 						
 					}
 				}
-				dog.ApplyGravitationalForce();
+				
 				
 				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
 				
 				//Render current frame
-				SDL_Rect* currentDogClip = &gSpriteClipsDog[ dogframe / 8 ];
-				gSpriteSheetTextureDog.render( dog.getDogPos().first, dog.getDogPos().second, currentDogClip );
+				SDL_Rect* currentDogClip = &gSpriteClipsDog[ (dogframe / 10) % WALKING_ANIMATION_FRAMES ];
+				SDL_Rect* currentStoneClip = &gSpriteClipsLavaStone[(stoneframe/2) % STONE_ANIMATION_FRAMES];
+				if (!isgameover&&!timer.isPaused())
+				{	
+					dog.ApplyGravitationalForce();
+					stone.UpdateStonePos();
+					//Go to next frame
+					++dogframe;
 
-				SDL_Rect* currentStoneClip = &gSpriteClipsLavaStone[(stoneframe/2) % STONE_ANIMATION_FRAMES];;
-				stone.UpdateStonePos();
-				gSpriteSheetTextureLavaStone.render(stone.getStonePos().first, stone.getStonePos().second, currentStoneClip);
+					//Cycle animation
+					if( dogframe / 10 >= WALKING_ANIMATION_FRAMES )
+					{
+						dogframe = 0;
+					}
+
+					++stoneframe;
+
+					//Cycle animation
+					if( stoneframe/2 >= STONE_ANIMATION_FRAMES )
+					{
+						stoneframe = 0;
+					}
+				}
+					gSpriteSheetTextureDog.render( dog.getDogPos().first, dog.getDogPos().second, currentDogClip );
+					gSpriteSheetTextureLavaStone.render(stone.getStonePos().first, stone.getStonePos().second, currentStoneClip);
+				
+				timeText.str( "" );
+				timeText << "Current Score : " << ( timer.getTicks() / 100.f ) ; 
+
+				//Render text
+				if( !gTimeTextTexture.loadFromRenderedText( timeText.str().c_str(), textColor ) )
+				{
+					printf( "Unable to render time texture!\n" );
+				}
+				//Render textures
+				gTimeTextTexture.render( ( SCREEN_WIDTH - gTimeTextTexture.getWidth() ) / 2, ( SCREEN_HEIGHT - gTimeTextTexture.getHeight() ) / 4 );
+				
+
+				
+
+				if(checkCollision(dog.getDogCollider(),stone.getStoneCollider()))
+				{
+					gTextTexture.render((SCREEN_WIDTH - gTextTexture.getWidth()) / 2,(SCREEN_HEIGHT - gTextTexture.getHeight()) / 2);
+					isgameover = true;
+					timer.pause();
+				}
 
 				//Update screen
 				SDL_RenderPresent( gRenderer );
 
-				/*if(checkCollision(dog.getDogCollider(),stone.getStoneCollider()))
-				{
-					SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
-					SDL_RenderClear(gRenderer);
-					gTextTexture.render((SCREEN_WIDTH - gTextTexture.getWidth()) / 2,(SCREEN_HEIGHT - gTextTexture.getHeight()) / 2);
-					gSpriteSheetTextureDog.render( dog.getDogPos().first, dog.getDogPos().second, currentClip );
-					stone.renderStone();
-					SDL_RenderPresent(gRenderer);
-					SDL_Delay(20000);
-					quit = true;
-				}*/
-
-				//Go to next frame
-				++dogframe;
-
-				//Cycle animation
-				if( dogframe / 8 >= WALKING_ANIMATION_FRAMES )
-				{
-					dogframe = 0;
-				}
-
-				++stoneframe;
-
-				//Cycle animation
-				if( stoneframe/2 >= STONE_ANIMATION_FRAMES )
-				{
-					stoneframe = 0;
-				}
+				
                 
 			}
 		}
