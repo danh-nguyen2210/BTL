@@ -33,6 +33,8 @@ class LTexture
 		//Renders texture at given point
 		void render( int x, int y, SDL_Rect* clip = NULL );
 
+		SDL_Texture* getTexture();
+
 		//Gets image dimensions
 		int getWidth();
 		int getHeight();

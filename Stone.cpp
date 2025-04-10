@@ -1,18 +1,16 @@
 #include"Stone.h"
-extern LTexture gStoneTexture;
+#include"Variables.h"
+#include"LTexture.h"
+#include"Timer.h"
 
-Stone::Stone()
-{
-	StonePos.first=SCREEN_WIDTH;
-	StonePos.second=(SCREEN_HEIGHT - 48)*3/4;
+
+Stone::Stone(int startX) : StonePos(startX, (SCREEN_HEIGHT + 15)*3/4) {
+    StoneCollider = {StonePos.first, StonePos.second, STONE_WIDTH, STONE_HEIGHT};
 }
 
 void Stone::UpdateStonePos()
 {
 	StonePos.first-=STONE_VEL;
-	if (StonePos.first==0){
-		StonePos.first=SCREEN_WIDTH;
-	}
 	StoneCollider={StonePos.first,StonePos.second,STONE_WIDTH,STONE_HEIGHT};
 }
 std::pair<int,int> Stone :: getStonePos()
@@ -21,7 +19,14 @@ std::pair<int,int> Stone :: getStonePos()
 }
 void Stone::renderStone()
 {
-	//gStoneTexture.render(StonePos.first,StonePos.second);
+	SDL_Rect* currentStoneClip = &gSpriteClipsLavaStone[(stoneFrame/2) % STONE_ANIMATION_FRAMES];
+	gSpriteSheetTextureLavaStone.render(StonePos.first, StonePos.second, currentStoneClip);
+	if(!isgameover&&!timer.isPaused()) ++stoneFrame;
+
+	if( stoneFrame/2 >= STONE_ANIMATION_FRAMES)
+	{
+		stoneFrame = 0;
+	}
 }
 SDL_Rect Stone::getStoneCollider()
 {

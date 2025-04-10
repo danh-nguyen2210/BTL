@@ -1,0 +1,25 @@
+#ifndef BATMANAGER_H
+#define BATMANAGER_H
+
+#include "Variables.h"
+#include "Bat.h"
+#include <vector>
+
+class BatManager {
+public:
+    BatManager();
+    void updateBats();
+    void renderBats();
+    std::vector<Bat>& getBats();
+    
+private:
+    std::vector<Bat> bats; 
+    void addBat();
+    
+    const int MIN_DISTANCE = 75;
+    const int MAX_DISTANCE = 150;
+    const int SPAWN_OFFSET = 50; 
+    const int distanceArray[5] = {200,300,400,500,600};
+};
+
+#endif
