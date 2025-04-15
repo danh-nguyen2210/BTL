@@ -15,14 +15,14 @@ void BatManager::updateBats() {
         bats.erase(bats.begin()); 
     }
 
-    if (bats.empty() || bats.back().getBatPos().first < SCREEN_WIDTH && bats.size()<2) {
+    if (bats.empty() || bats.back().getBatPos().first < SCREEN_WIDTH && bats.size()<rand()%3) {
         addBat();
     }
 }
 
-void BatManager::renderBats() {
+void BatManager::renderBats(const string& map) {
     for (int i = 0; i < bats.size(); i++) {
-        bats[i].renderBat();
+        bats[i].renderBat(map);
     }
 }
 
@@ -49,4 +49,9 @@ void BatManager::addBat() {
 
 std::vector<Bat>& BatManager::getBats(){
     return bats;
+}
+void BatManager::reset()
+{
+    bats.clear();    // Xóa hết các viên đá cũ
+    addBat();        // Thêm viên đá đầu tiên như constructor
 }

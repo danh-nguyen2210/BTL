@@ -4,6 +4,7 @@
 #include <SDL.h>
 #include <utility> 
 #include "Variables.h"
+#include "LTexture.h"
 
 class Stone {
 public: 
@@ -15,12 +16,15 @@ public:
     void UpdateStonePos();
     std::pair<int,int> getStonePos();
     SDL_Rect getStoneCollider();
-    void renderStone();
+    void renderStone(const string& map);
+    void setStone(string CurrentMapStone );
+    string getStone();
 
 private:
     std::pair<int,int> StonePos;
     SDL_Rect StoneCollider;
     int stoneFrame = 0;
+    string currentStone;
 };
 
 #endif

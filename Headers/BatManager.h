@@ -9,8 +9,9 @@ class BatManager {
 public:
     BatManager();
     void updateBats();
-    void renderBats();
+    void renderBats(const string& map);
     std::vector<Bat>& getBats();
+    void reset();
     
 private:
     std::vector<Bat> bats; 

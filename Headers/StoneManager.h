@@ -8,8 +8,9 @@ class StoneManager {
 public:
     StoneManager();
     void updateStones();
-    void renderStones();
+    void renderStones(const string& map);
     std::vector<Stone> getStones();
+    void reset();
     
 private:
     std::vector<Stone> stones; 

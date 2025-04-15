@@ -15,14 +15,14 @@ void StoneManager::updateStones() {
         stones.erase(stones.begin()); 
     }
 
-    if (stones.empty() || stones.back().getStonePos().first < SCREEN_WIDTH && stones.size()<2) {
+    if (stones.empty() || stones.back().getStonePos().first < SCREEN_WIDTH && stones.size()<rand()%3) {
         addStone();
     }
 }
 
-void StoneManager::renderStones() {
+void StoneManager::renderStones(const string& map) {
     for (int i = 0; i < stones.size(); i++) {
-        stones[i].renderStone();
+        stones[i].renderStone(map);
     }
 }
 
@@ -50,4 +50,10 @@ void StoneManager::addStone() {
 
 std::vector<Stone> StoneManager::getStones(){
     return stones;
+}
+
+void StoneManager::reset()
+{
+    stones.clear();    // Xóa hết các viên đá cũ
+    addStone();        // Thêm viên đá đầu tiên như constructor
 }

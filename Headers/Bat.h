@@ -18,7 +18,7 @@ public:
     void UpdateBatPos();
     std::pair<int,int> getBatPos();
     SDL_Rect getBatCollider();
-    void renderBat();
+    void renderBat(const string& map);
 
 private:
     std::pair<int,int> BatPos;

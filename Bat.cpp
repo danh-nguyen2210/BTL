@@ -14,14 +14,23 @@ void Bat::UpdateBatPos()
 	BatPos.first-=BAT_VEL;
 	BatCollider = {BatPos.first, BatPos.second, BAT_WIDTH, BAT_HEIGHT};
 }
+
 std::pair<int,int> Bat :: getBatPos()
 {
 	return BatPos;
 }
-void Bat::renderBat()
+
+void Bat::renderBat(const string& map)
 {
 	SDL_Rect* currentBatClip = &gSpriteClipsLavaBat[(batFrame/6) % BAT_ANIMATION_FRAMES];
-	gSpriteSheetTextureLavaBat.render(BatPos.first, BatPos.second, currentBatClip);
+	if (map=="Lava"){
+		gSpriteSheetTextureLavaBat.render(BatPos.first, BatPos.second, currentBatClip);
+	}
+	else
+	{
+		gSpriteSheetTextureIceBat.render(BatPos.first, BatPos.second, currentBatClip);
+	}
+	
 	if(!isgameover&&!timer.isPaused()) ++batFrame;
 
 	//Cycle animation
@@ -30,6 +39,7 @@ void Bat::renderBat()
 		batFrame = 0;
 	}
 }
+
 SDL_Rect Bat::getBatCollider()
 {
 	return BatCollider;

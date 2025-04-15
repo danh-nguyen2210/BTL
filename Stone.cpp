@@ -17,10 +17,17 @@ std::pair<int,int> Stone :: getStonePos()
 {
 	return StonePos;
 }
-void Stone::renderStone()
+void Stone::renderStone(const string& map)
 {
+
 	SDL_Rect* currentStoneClip = &gSpriteClipsLavaStone[(stoneFrame/2) % STONE_ANIMATION_FRAMES];
-	gSpriteSheetTextureLavaStone.render(StonePos.first, StonePos.second, currentStoneClip);
+	if (map=="Lava"){
+		gSpriteSheetTextureLavaStone.render(StonePos.first, StonePos.second, currentStoneClip);
+	}
+	
+	else{
+		gSpriteSheetTextureIceStone.render(StonePos.first, StonePos.second, currentStoneClip);
+	}
 	if(!isgameover&&!timer.isPaused()) ++stoneFrame;
 
 	if( stoneFrame/2 >= STONE_ANIMATION_FRAMES)
@@ -31,4 +38,12 @@ void Stone::renderStone()
 SDL_Rect Stone::getStoneCollider()
 {
 	return StoneCollider;
+}
+void Stone::setStone(string map)
+{
+	currentStone=map;
+}
+string Stone::getStone()
+{
+	return currentStone;
 }

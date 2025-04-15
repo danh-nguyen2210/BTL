@@ -6,56 +6,107 @@
 #include "StoneManager.h"
 #include "Bat.h"
 #include "BatManager.h"
+#include "Drug.h"
+#include "DrugManager.h"
 
 // Initialize global variables
 SDL_Window* gWindow = nullptr;
 SDL_Renderer* gRenderer = nullptr;
-TTF_Font* gFont = nullptr;
+TTF_Font* gFontSmall = nullptr;
+TTF_Font* gFontMedium = nullptr;
+TTF_Font* gFontLarge = nullptr;
+
 LTexture gSpriteSheetTextureDog;
 LTexture gSpriteSheetTextureIceStone;
 LTexture gSpriteSheetTextureLavaStone;
 LTexture gSpriteSheetTextureIceBat;
 LTexture gSpriteSheetTextureLavaBat;
+LTexture gSpriteSheetTextureDrug;
 LTexture gTextTexture;
 LTexture gTimeTextTexture;
 LTexture gPausePromptTexture;
 LTexture gStartPromptTexture;
+LTexture gDrugTextTexture;
+LTexture gScoreText;
+LTexture gHighScoreText;
+LTexture Pause;
+LTexture HomeTexture;
+LTexture ResumeTexture;
+LTexture AgainTexture;
+
+
+LTexture gMenu;
+LTexture gChoose1From2;
+LTexture gChooseIce;
+LTexture gChooseLava;
+LTexture gStartGameText;
+LTexture gExitGameText;
+LTexture gHelpGameText;
+LTexture gReturnButton;
+LTexture gHelp;
+LTexture Loser;
+
+
+
+
 SDL_Rect gSpriteClipsDog[WALKING_ANIMATION_FRAMES];
 SDL_Rect gSpriteClipsIceStone[STONE_ANIMATION_FRAMES];
 SDL_Rect gSpriteClipsLavaStone[STONE_ANIMATION_FRAMES];
 SDL_Rect gSpriteClipsIceBat[BAT_ANIMATION_FRAMES];
 SDL_Rect gSpriteClipsLavaBat[BAT_ANIMATION_FRAMES];
+SDL_Rect StartGameRect={525,253,169,33};
+SDL_Rect HelpGameRect={575,323,67,31};
+SDL_Rect ExitGameRect={575,400,64,27};
+SDL_Rect ChooseIceMap ={70,170,480,200};
+SDL_Rect ChooseLavaMap = {714,170,480,200};
+SDL_Rect ReturnButton = {15,15,40,40};
+SDL_Rect Home={315,110,202,278};
+SDL_Rect Resume={528,110,202,278};
+SDL_Rect Again={745,110,202,278};
+
 Dog dog;
 int dogframe = 0;
 Stone stone;
 int stoneframe = 0;
 Bat bat;
 int batframe = 0;
+Drug drug;
 SDL_Event e;
-SDL_Color textColor = { 0, 0, 0, 255 };
+SDL_Color textColor = { 255, 255, 255, 255 };
 LTimer timer;
 std::stringstream timeText;
+std::stringstream drugText;
+std::stringstream StartGameText;
+std::stringstream ExitGameText;
+std::stringstream HelpGameText;
 bool quit = false;
 bool isJump = true;
 bool isgameover = false;
+bool isStartGame = false;
+bool isInHelp = false;
+bool isInMenu = true;
+bool isInChooseMap = false;
+bool isPause = false;
+bool isHome = false;
+bool isResume = false;
+bool isAgain = false;
 StoneManager stoneManager;
 LTexture gBGLavaTexture;
 LTexture gBGIceTexture;
 BatManager batManager;
+DrugManager drugManager;
 int scrollingOffset = 0;
+bool isFPressed = false;
+int drugCount = 0;
+SDL_Point mousePoint;
 string map;
-
-struct DayNightInfo {
-    Uint8 overlayAlpha;
-    Uint32 lastCycleIndex = 0; 
-    string map = "Ice";
-    bool justStartedNewCycle = false; 
-
-    void update(Uint32 timeNow);
-};
+int highScore=0;    
+int currentScore=0;
+int score = 0;
 
 DayNightInfo dayNightInfo;
 void checkDistanceOfBatsAndStones();
+
 
 bool init()
 {
@@ -123,34 +174,33 @@ bool loadMedia()
 	//Loading success flag
 	bool success = true;
 
-	gFont = TTF_OpenFont("Font/font.ttf",20);
-	if( gFont == NULL )
+	gFontSmall = TTF_OpenFont("Font/font.ttf",20);
+    gFontMedium = TTF_OpenFont("Font/font.ttf",40);
+    gFontLarge = TTF_OpenFont("Font/font.ttf",55);
+	if( gFontSmall == NULL )
 	{
-		printf( "Failed to load lazy font! SDL_ttf Error: %s\n", TTF_GetError() );
+		printf( "Failed to load small font! SDL_ttf Error: %s\n", TTF_GetError() );
+		success = false;
+	}
+    if( gFontMedium == NULL )
+	{
+		printf( "Failed to load medium font! SDL_ttf Error: %s\n", TTF_GetError() );
+		success = false;
+	}
+    if( gFontLarge == NULL )
+	{
+		printf( "Failed to load large font! SDL_ttf Error: %s\n", TTF_GetError() );
 		success = false;
 	}
 	else
 	{
 		//Render text
-		SDL_Color textColor = { 0, 0, 0, 255 };
-		if( !gTextTexture.loadFromRenderedText( "Game Over!", textColor ) )
+		SDL_Color textColor = { 255, 255, 255, 255};
+		if( !gTextTexture.loadFromRenderedText( "Game Over!", textColor, gFontSmall ) )
 		{
 			printf( "Failed to render text texture!\n" );
 			success = false;
 		}
-		if( !gStartPromptTexture.loadFromRenderedText( "Press S to Start or Stop the Timer", textColor ) )
-		{
-			printf( "Unable to render start/stop prompt texture!\n" );
-			success = false;
-		}
-		
-		//Load pause prompt texture
-		if( !gPausePromptTexture.loadFromRenderedText( "Press P to Pause or Unpause the Timer", textColor ) )
-		{
-			printf( "Unable to render pause/unpause prompt texture!\n" );
-			success = false;
-		}
-		
 	}
 	//Load sprite sheet texture
 	if( !gSpriteSheetTextureDog.loadFromFile( "Dog/Dog.png" ) )
@@ -204,7 +254,7 @@ bool loadMedia()
 	}
 	else
 	{
-        for (int i = 0; i<18;i++){
+        for (int i = 0; i<7;i++){
             gSpriteClipsIceBat[ i ].x = i*48;
             gSpriteClipsIceBat[ i ].y =   0;
             gSpriteClipsIceBat[ i ].w =  48;
@@ -219,7 +269,7 @@ bool loadMedia()
 	}
 	else
 	{
-        for (int i = 0; i<18;i++){
+        for (int i = 0; i<7;i++){
             gSpriteClipsLavaBat[ i ].x = i*48;
             gSpriteClipsLavaBat[ i ].y =   0;
             gSpriteClipsLavaBat[ i ].w =  48;
@@ -236,9 +286,72 @@ bool loadMedia()
 		printf( "Failed to load Ice background texture!\n" );
 		success = false;
 	}
-	
-	
-	return success;
+	if( !gSpriteSheetTextureDrug.loadFromFile( "Drug/Drug.png" ) )
+	{
+		printf( "Failed to load rolling Lava Bat animation texture!\n" );
+		success = false;
+	}
+    if( !gSpriteSheetTextureDrug.loadFromFile( "Drug/Drug.png" ) )
+	{
+		printf( "Failed to load rolling Lava Bat animation texture!\n" );
+		success = false;
+	}
+    if( !gMenu.loadFromFile( "BG/Menu.png" ) )
+	{
+		printf( "Failed to load Menu texture!\n" );
+		success = false;
+	}
+    if( !gChoose1From2.loadFromFile( "BG/Choose1From2.png" ) )
+	{
+		printf( "Failed to load Choose Menu texture!\n" );
+		success = false;
+	}
+    if( !gChooseIce.loadFromFile( "BG/ChooseIce.png" ) )
+	{
+		printf( "Failed to load Choose Ice Menu texture!\n" );
+		success = false;
+	}
+    if( !gChooseLava.loadFromFile( "BG/ChooseLava.png" ) )
+	{
+		printf( "Failed to load Choose Lava Menu texture!\n" );
+		success = false;
+	}
+    if( !gReturnButton.loadFromFile( "Button/Return.png" ) )
+	{
+		printf( "Failed to load Return Button texture!\n" );
+		success = false;
+	}
+    if( !gHelp.loadFromFile( "BG/Help.png" ) )
+	{
+		printf( "Failed to load Help Menu texture!\n" );
+		success = false;
+	}
+    if( !Loser.loadFromFile( "BG/Loser.png" ) )
+	{
+		printf( "Failed to load Loser texture!\n" );
+		success = false;
+	}
+    if( !Pause.loadFromFile( "BG/Pause.png" ) )
+	{
+		printf( "Failed to load pause texture!\n" );
+		success = false;
+	}
+    if( !HomeTexture.loadFromFile( "BG/Home.png" ) )
+	{
+		printf( "Failed to load home texture!\n" );
+		success = false;
+	}
+    if( !ResumeTexture.loadFromFile( "BG/Resume.png" ) )
+	{
+		printf( "Failed to load Resume texture!\n" );
+		success = false;
+	}
+    if( !AgainTexture.loadFromFile( "BG/Again.png" ) )
+	{
+		printf( "Failed to load again texture!\n" );
+		success = false;
+	}
+    return success;
 }
 
 
@@ -250,6 +363,20 @@ void close()
 	gSpriteSheetTextureLavaStone.free();
     gSpriteSheetTextureIceBat.free();
 	gSpriteSheetTextureLavaBat.free();
+    gSpriteSheetTextureDrug.free();
+    
+
+    gMenu.free();
+    gChoose1From2.free();
+    gChooseIce.free();
+    gChooseLava.free();
+    gReturnButton.free();
+    gHelp.free();
+    Loser.free();
+    Pause.free();
+    HomeTexture.free();
+    ResumeTexture.free();
+    AgainTexture.free();
 
 	gTimeTextTexture.free();
 	gStartPromptTexture.free();
@@ -260,8 +387,16 @@ void close()
 
 
 	gTextTexture.free();
-	TTF_CloseFont( gFont );
-	gFont = NULL;
+    gStartGameText.free();
+    gHelpGameText.free();
+    gExitGameText.free();
+
+	TTF_CloseFont( gFontSmall );
+    TTF_CloseFont( gFontMedium);
+    TTF_CloseFont (gFontLarge);
+	gFontSmall = NULL;
+    gFontMedium= NULL;
+    gFontLarge = NULL;
 
 	//Destroy window	
 	SDL_DestroyRenderer( gRenderer );
@@ -273,153 +408,6 @@ void close()
 	TTF_Quit();
 	IMG_Quit();
 	SDL_Quit();
-}
-
-void eventHandler()
-{
-    while( SDL_PollEvent( &e ) != 0 )
-        {
-            //User requests quit
-            if( e.type == SDL_QUIT )
-            {
-                quit = true;
-            }
-            
-            if (e.type == SDL_KEYDOWN&&!isgameover)
-            {
-                if (e.key.keysym.sym == SDLK_SPACE)
-                {
-                    dog.jump();
-                }
-                //Pause/unpause
-                if( e.key.keysym.sym == SDLK_p )
-                {
-                    if( timer.isPaused() )
-                    {
-                        timer.unpause();
-                    }
-                    else
-                    {
-                        timer.pause();
-                    }
-                }
-                
-            }
-        }
-}
-
-void updateGameLogic()
-{
-    if (!isgameover && !timer.isPaused())
-    {
-        dog.ApplyGravitationalForce();
-        stoneManager.updateStones();
-        batManager.updateBats();
-
-        --scrollingOffset;
-        if (scrollingOffset < -gBGIceTexture.getWidth())
-            scrollingOffset = 0;
-    }
-}
-
-void DayNightInfo::update(Uint32 timeNow)
-{
-    const Uint32 dayDuration = 1000;
-    const Uint32 fadeDuration = 500;
-    const Uint32 nightDuration = 1000;
-    const Uint32 fullCycle = dayDuration + fadeDuration + nightDuration + fadeDuration;
-
-    Uint32 cycleTime = timeNow % fullCycle;
-    Uint32 currentCycleIndex = timeNow / fullCycle;
-
-    // Đổi map nếu bắt đầu cycle mới
-    if (currentCycleIndex != lastCycleIndex) {
-        justStartedNewCycle = true;
-        lastCycleIndex = currentCycleIndex;
-
-        // Chuyển đổi map
-        map = (map == "Ice") ? "Lava" : "Ice";
-    } else {
-        justStartedNewCycle = false;
-    }
-
-    enum Phase { DAY, FADING_TO_NIGHT, NIGHT, FADING_TO_DAY };
-    Phase phase;
-    float fadeProgress = 0.0f;
-
-    if (cycleTime < dayDuration)
-        phase = DAY;
-    else if (cycleTime < dayDuration + fadeDuration) {
-        phase = FADING_TO_NIGHT;
-        fadeProgress = (float)(cycleTime - dayDuration) / fadeDuration;
-    }
-    else if (cycleTime < dayDuration + fadeDuration + nightDuration)
-        phase = NIGHT;
-    else {
-        phase = FADING_TO_DAY;
-        fadeProgress = (float)(cycleTime - (dayDuration + fadeDuration + nightDuration)) / fadeDuration;
-    }
-
-    // Alpha mờ dần
-    if (phase == FADING_TO_NIGHT)
-        overlayAlpha = (Uint8)(180.0f * fadeProgress);
-    else if (phase == NIGHT)
-        overlayAlpha = 180;
-    else if (phase == FADING_TO_DAY)
-        overlayAlpha = (Uint8)(180.0f * (1.0f - fadeProgress));
-    else
-        overlayAlpha = 0;
-}
-
-void renderBackground(const string& map)
-{
-    if (map == "Ice")
-    {
-        gBGIceTexture.render(scrollingOffset, 0);
-        gBGIceTexture.render(scrollingOffset + gBGIceTexture.getWidth(), 0);
-    }
-    else if (map == "Lava")
-    {
-        gBGLavaTexture.render(scrollingOffset, 0);
-        gBGLavaTexture.render(scrollingOffset + gBGLavaTexture.getWidth(), 0);
-    }
-}
-
-void renderNightOverlay()
-{
-    if (dayNightInfo.overlayAlpha > 0)
-    {
-        SDL_SetRenderDrawBlendMode(gRenderer, SDL_BLENDMODE_BLEND);
-        SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, dayNightInfo.overlayAlpha);
-        SDL_Rect fullScreen = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
-        SDL_RenderFillRect(gRenderer, &fullScreen);
-    }
-}
-
-void renderGameObjects()
-{
-    checkDistanceOfBatsAndStones();
-    dog.renderDog();
-    stoneManager.renderStones();
-    batManager.renderBats();
-}
-
-void renderScore()
-{
-    timeText.str("");
-    timeText << "Current Score : " << (timer.getTicks() / 100.f);
-
-    if (!gTimeTextTexture.loadFromRenderedText(timeText.str().c_str(), textColor))
-        printf("Unable to render time texture!\n");
-
-    gTimeTextTexture.render(
-        (SCREEN_WIDTH - gTimeTextTexture.getWidth()) / 2,
-        (SCREEN_HEIGHT - gTimeTextTexture.getHeight()) / 4
-    );
-    if (isgameover)
-    {
-        gTextTexture.render((SCREEN_WIDTH - gTextTexture.getWidth()) / 2, (SCREEN_HEIGHT - gTextTexture.getHeight()) / 2 );
-    }
 }
 
 bool checkCollision( SDL_Rect a, SDL_Rect b )
@@ -466,36 +454,6 @@ bool checkCollision( SDL_Rect a, SDL_Rect b )
     return true;
 }
 
-void checkCollisions()
-{
-    if (isgameover) return;
-
-    const SDL_Rect dogCollider = dog.getDogCollider();
-
-    std::vector<Stone> stones = stoneManager.getStones();
-    for (Stone stone : stones)
-    {
-        if (checkCollision(dogCollider, stone.getStoneCollider()))
-        {
-            
-            isgameover = true;
-            timer.pause();
-            return;
-        }
-    }
-
-    std::vector<Bat> bats = batManager.getBats();
-    for (Bat& bat : bats)
-    {
-        if (checkCollision(dogCollider, bat.getBatCollider()))
-        {
-            isgameover = true;
-            timer.pause();
-            return;
-        }
-    }
-}
-
 void checkDistanceOfBatsAndStones()
 {
     auto& bats = batManager.getBats();
@@ -525,8 +483,217 @@ void checkDistanceOfBatsAndStones()
     }
 }
 
+void DayNightInfo::update(Uint32 timeNow)
+{
+    const Uint32 dayDuration = 10000;
+    const Uint32 fadeDuration = 500;
+    const Uint32 nightDuration = 10000;
+    const Uint32 fullCycle = dayDuration + fadeDuration + nightDuration + fadeDuration;
+
+    Uint32 cycleTime = timeNow % fullCycle;
+    Uint32 currentCycleIndex = timeNow / fullCycle;
+
+    enum Phase { DAY, FADING_TO_NIGHT, NIGHT, FADING_TO_DAY };
+    Phase phase;
+    float fadeProgress = 0.0f;
+
+    if (cycleTime < dayDuration)
+        phase = DAY;
+    else if (cycleTime < dayDuration + fadeDuration) {
+        phase = FADING_TO_NIGHT;
+        fadeProgress = (float)(cycleTime - dayDuration) / fadeDuration;
+    }
+    else if (cycleTime < dayDuration + fadeDuration + nightDuration)
+        phase = NIGHT;
+    else {
+        phase = FADING_TO_DAY;
+        fadeProgress = (float)(cycleTime - (dayDuration + fadeDuration + nightDuration)) / fadeDuration;
+    }
+
+    // Alpha mờ dần
+    if (phase == FADING_TO_NIGHT)
+        overlayAlpha = (Uint8)(180.0f * fadeProgress);
+    else if (phase == NIGHT)
+        overlayAlpha = 180;
+    else if (phase == FADING_TO_DAY)
+        overlayAlpha = (Uint8)(180.0f * (1.0f - fadeProgress));
+    else
+        overlayAlpha = 0;
+}
+
+void renderNightOverlay()
+{
+    if (dayNightInfo.overlayAlpha > 0)
+    {
+        SDL_SetRenderDrawBlendMode(gRenderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, dayNightInfo.overlayAlpha);
+        SDL_Rect fullScreen = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+        SDL_RenderFillRect(gRenderer, &fullScreen);
+    }
+}
+
+void renderBackground(const string& map)
+{
+    if (map == "Ice")
+    {
+        gBGIceTexture.render(scrollingOffset, 0);
+        gBGIceTexture.render(scrollingOffset + gBGIceTexture.getWidth(), 0);
+    }
+    else if (map == "Lava")
+    {
+        gBGLavaTexture.render(scrollingOffset, 0);
+        gBGLavaTexture.render(scrollingOffset + gBGLavaTexture.getWidth(), 0);
+    }
+}
+
+void updateGameLogic()
+{
+    if (!isgameover && !timer.isPaused())
+    {
+        dog.ApplyGravitationalForce();
+        dog.HandleFlyLogic(isFPressed);  // <-- gọi hàm duy nhất này
+        isFPressed = false; // reset sau khi xử lý
+        stoneManager.updateStones();
+        batManager.updateBats();
+        drugManager.updateDrugs();
+
+        --scrollingOffset;
+        if (scrollingOffset < -gBGIceTexture.getWidth())
+            scrollingOffset = 0;
+        isFPressed = false;
+    }
+}
+
+void renderGameObjects()
+{
+    checkDistanceOfBatsAndStones();
+    stoneManager.renderStones(map);
+    batManager.renderBats(map);
+    drugManager.renderDrugs();
+    dog.renderDog();
+    dog.renderFlyTimeBar();
+}
+
+void renderDrug()
+{
+    drugText.str("");
+    drugText  << "x" << drugCount;
+
+    if (!gDrugTextTexture.loadFromRenderedText(drugText.str().c_str(), textColor,gFontSmall))
+        printf("Unable to render drug text texture!\n");
+
+    gDrugTextTexture.render(SCREEN_WIDTH-40,3); // Render góc trái trên cùng (tuỳ chỉnh vị trí)
+
+    if (isgameover)
+    {
+       Loser.render(0,0,NULL);
+    }
+}
+void renderScore()
+{
+    int score = (timer.getTicks() / 100);
+    std::stringstream scoreText;
+    scoreText << "Score: " << score;
+    gScoreText.loadFromRenderedText(scoreText.str().c_str(), textColor, gFontSmall);
+    gScoreText.render(SCREEN_WIDTH/2-65, 15);
+
+    std::stringstream hsText;
+    hsText << "High Score: " << highScore;
+    gHighScoreText.loadFromRenderedText(hsText.str().c_str(), textColor, gFontSmall);
+    gHighScoreText.render(SCREEN_WIDTH/2-80, 0); 
+}
 
 
+void eventHandler()
+{
+
+    while (SDL_PollEvent(&e) != 0)
+    {
+        if (e.type == SDL_QUIT)
+            quit = true;
+        else if (e.type == SDL_KEYDOWN && !isgameover)
+        {
+            if (e.key.keysym.sym == SDLK_SPACE)
+                dog.jump();
+
+            if (e.key.keysym.sym == SDLK_f)
+            {
+                isFPressed = true;
+                if (drugCount)  drugCount--;
+            }
+            if (e.key.keysym.sym == SDLK_p)
+            {
+                if (timer.isPaused()) timer.unpause();
+                else timer.pause();
+            }
+        }
+        
+    }
+
+}
+
+void checkCollisions()
+{
+    if (isgameover) return;
+
+    const SDL_Rect dogCollider = dog.getDogCollider();
+
+    std::vector<Stone> stones = stoneManager.getStones();
+    for (Stone stone : stones)
+    {
+        if (checkCollision(dogCollider, stone.getStoneCollider()))
+        {
+            
+            isgameover = true;
+            timer.pause();
+            return;
+        }
+    }
+
+    std::vector<Bat> bats = batManager.getBats();
+    for (Bat& bat : bats)
+    {
+        if (checkCollision(dogCollider, bat.getBatCollider()))
+        {
+            isgameover = true;
+            timer.pause();
+            return;
+        }
+    }
+
+    auto& drugs = drugManager.getDrugs();
+
+    for (int i = 0; i < drugs.size(); )
+    {
+        if (checkCollision(dogCollider, drugs[i].getDrugCollider()))
+        {
+            drugCount++;
+            drugs.erase(drugs.begin() + i); // Xóa và không tăng i
+        }
+        else
+        {
+            ++i; // Tăng nếu không xóa
+        }
+    }
+}
+
+int LoadHighScore(const string& filename) {
+    std::ifstream file("highscore.txt");
+    int score = 0;
+    if (file.is_open()) {
+        file >> score;
+        file.close();
+    }
+    return score;
+}
+
+void saveHighScore(const string& filename,int &score) {
+    std::ofstream file("highscore.txt");
+    if (file.is_open()) {
+        file << score;
+        file.close();
+    }
+}
 
 
 
@@ -537,14 +704,16 @@ void renderAll()
 
     dayNightInfo.update(timer.getTicks());
 
-    renderBackground(dayNightInfo.map);
+    renderBackground(map);
     renderNightOverlay();
 
     updateGameLogic();
 
     renderGameObjects();
+    renderDrug();
     renderScore();
     checkCollisions();
+    gSpriteSheetTextureDrug.render(SCREEN_WIDTH-75,0,NULL);
 
     SDL_RenderPresent(gRenderer);
 }
