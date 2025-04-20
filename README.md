@@ -43,8 +43,17 @@
       Điều khiển menu & tạm dừng bằng chuột
       Giao diện đơn giản, trực quan, dễ thao tác
     
-    🔥 Ba điểm nổi bật:
-    
+    🔥 Các điểm nổi bật:
+
+      Nhân vật chính và ảnh nền Menu được tự tay vẽ – tạo dấu ấn riêng
       Thuốc bay: Cơ chế bay độc đáo, linh hoạt theo thao tác người chơi
       Chuyển cảnh ngày-đêm: Tăng chiều sâu và sự sống động cho trải nghiệm
       Chọn map Ice hoặc Lava: Tùy biến trải nghiệm theo sở thích
+   
+
+5. Các nguồn tham khảo
+
+      Tutorial: https://lazyfoo.net/tutorials/SDL/index.php
+      Ngoài ra, ảnh và âm thanh được tải về từ một số nguồn khác và chỉnh sửa thêm
+      
+      
