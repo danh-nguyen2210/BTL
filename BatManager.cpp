@@ -1,4 +1,5 @@
 #include "BatManager.h"
+#include "Bat.h"
 
 
 BatManager::BatManager() {
@@ -7,16 +8,19 @@ BatManager::BatManager() {
 }
 
 void BatManager::updateBats() {
+   
     for (int i = 0; i < bats.size(); i++) {
         bats[i].UpdateBatPos();
     }
 
     if (!bats.empty() && bats[0].getBatPos().first + Bat::BAT_WIDTH < 0) {
-        bats.erase(bats.begin()); 
+        bats.erase(bats.begin());
     }
 
-    if (bats.empty() || bats.back().getBatPos().first < SCREEN_WIDTH && bats.size()<rand()%3) {
+    // Sinh Bat mới khi khoảng cách đủ lớn
+    if (bats.empty() || ((SCREEN_WIDTH - bats.back().getBatPos().first) > nextBatDistance)&& bats.size()< rand()%3) {
         addBat();
+        nextBatDistance = distanceArray[rand() % 5]; // cập nhật lại khoảng cách mới
     }
 }
 

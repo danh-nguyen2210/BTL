@@ -4,7 +4,7 @@
 #include"Timer.h"
 Dog::Dog()
 {
-	DogPos.first=( SCREEN_WIDTH - 48 ) *1/4;
+	DogPos.first=( SCREEN_WIDTH - 170 ) *1/4;
 	DogPos.second=( SCREEN_HEIGHT + 5 ) *3/4;
 	velocityY=0;
 	isJumping=false;
@@ -15,19 +15,24 @@ void Dog::jump()
 {
     if (isFlying)
     {
-        // Nếu đang bay, thì hủy trạng thái bay
-        isFlying = false;
-        flyTimer.stop();
+       return;
     }
-
-    velocityY = JUMP_VEL; // Thiết lập vận tốc nhảy
-    isJumping = true;     // Nếu bạn vẫn muốn giữ trạng thái nhảy
+    if (isJumping)
+    {
+        return;
+    }
+    if (DogPos.second==( SCREEN_HEIGHT + 5 ) *3/4)
+    {
+        velocityY = JUMP_VEL; // Thiết lập vận tốc nhảy
+        isJumping = true;     
+    }
+    
 }
 
 
 void Dog::HandleFlyLogic(bool isFPressedNow)
 {
-    // ===== XỬ LÝ SỰ KIỆN BẤM F =====
+
     if (isFPressedNow)
     {
         if (!isFlying && !hasFlown)
@@ -43,7 +48,7 @@ void Dog::HandleFlyLogic(bool isFPressedNow)
         }
     }
 
-    // ===== XỬ LÝ LOGIC BAY & RƠI =====
+   // xử lý logic bay và rơi
     if (isFlying)
     {
         DogPos.second += velocityY;
@@ -57,7 +62,7 @@ void Dog::HandleFlyLogic(bool isFPressedNow)
     }
     else
     {
-        if (hasFlown && !isFalling && flyTimer.getTicks() >= 5000)
+        if (hasFlown && !isFalling && flyTimer.getTicks() >= 5000) 
         {
             isFalling = true; // tự rơi sau 5s
         }
@@ -144,23 +149,22 @@ void Dog::renderFlyTimeBar()
     const int x = SCREEN_WIDTH-285;
     const int y = 5;
 
-    int filledWidth = static_cast<int>(barWidth * percentage);
-    if (filledWidth < 0) filledWidth = 0;
+    int filledWidth = (int)(barWidth * percentage);
 
-    // === Nhấp nháy nếu còn dưới 1 giây ===
+    // Nhấp nháy nếu còn dưới 1 giây 
     bool blink = false;
     if (MAX_FLY_DURATION - elapsed <= 1000)
     {
         Uint32 blinkTime = SDL_GetTicks() / 150; // nhấp nháy mỗi 150ms
-        blink = (blinkTime % 2 == 0);
+        blink = (blinkTime % 2 == 0); // xen kẽ ẩn hiện
     }
-
-    // === Vẽ nền xám ===
+    
+    // Vẽ nền xám 
     SDL_SetRenderDrawColor(gRenderer, 100, 100, 100, 255);
     SDL_Rect background = { x, y, barWidth, barHeight };
     SDL_RenderFillRect(gRenderer, &background);
 
-    // === Vẽ thanh tím nếu chưa đến lúc nhấp nháy ẩn ===
+    // Vẽ thanh tím nếu chưa đến lúc nhấp nháy ẩn 
     if (filledWidth > 0 && (!blink || MAX_FLY_DURATION - elapsed > 1000))
     {
         SDL_SetRenderDrawColor(gRenderer, 75, 0, 130, 255);
@@ -178,3 +182,7 @@ void Dog::reset()
     DogCollider={DogPos.first,DogPos.second,DOG_WIDTH,DOG_HEIGHT};
 }
 
+bool Dog::isDogFlying()
+{
+    return !(DogPos.second==( SCREEN_HEIGHT + 5 ) *3/4);
+}

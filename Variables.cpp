@@ -59,10 +59,16 @@ SDL_Rect HelpGameRect={575,323,67,31};
 SDL_Rect ExitGameRect={575,400,64,27};
 SDL_Rect ChooseIceMap ={70,170,480,200};
 SDL_Rect ChooseLavaMap = {714,170,480,200};
-SDL_Rect ReturnButton = {15,15,40,40};
+SDL_Rect ReturnButton = {0,0,60,60};
 SDL_Rect Home={315,110,202,278};
 SDL_Rect Resume={528,110,202,278};
 SDL_Rect Again={745,110,202,278};
+
+Mix_Music *BGSound = NULL;
+Mix_Chunk *Jump = NULL;
+Mix_Chunk *Click = NULL;
+Mix_Chunk *Die = NULL;
+Mix_Chunk *UsingDrug = NULL;
 
 Dog dog;
 int dogframe = 0;
@@ -102,11 +108,9 @@ SDL_Point mousePoint;
 string map;
 int highScore=0;    
 int currentScore=0;
-int score = 0;
+bool isMuted = false;
 
 DayNightInfo dayNightInfo;
-void checkDistanceOfBatsAndStones();
-
 
 bool init()
 {
@@ -114,7 +118,7 @@ bool init()
 	bool success = true;
 
 	//Initialize SDL
-	if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+	if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
 	{
 		printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
 		success = false;
@@ -128,7 +132,7 @@ bool init()
 		}
 
 		//Create window
-		gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+		gWindow = SDL_CreateWindow( "Dog Adventure", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
 		if( gWindow == NULL )
 		{
 			printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
@@ -156,7 +160,13 @@ bool init()
 					success = false;
 				}
 
-				 //Initialize SDL_ttf
+				 //Initialize SDL_mixer
+				if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+				{
+					printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+					success = false;
+				}
+                 //Initialize SDL_ttf
 				if( TTF_Init() == -1 )
 				{
 					printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
@@ -351,6 +361,39 @@ bool loadMedia()
 		printf( "Failed to load again texture!\n" );
 		success = false;
 	}
+
+    //Load music
+    BGSound = Mix_LoadMUS( "Sound/bgsound.mp3" );
+	if( BGSound == NULL )
+	{
+		printf( "Failed to load BG music! SDL_mixer Error: %s\n", Mix_GetError() );
+		success = false;
+	}
+	Jump = Mix_LoadWAV( "Sound/jump.wav" );
+	if( Jump == NULL )
+	{
+		printf( "Failed to load jump music! SDL_mixer Error: %s\n", Mix_GetError() );
+		success = false;
+	}
+    Click = Mix_LoadWAV( "Sound/click.wav" );
+	if( Click == NULL )
+	{
+		printf( "Failed to load click music! SDL_mixer Error: %s\n", Mix_GetError() );
+		success = false;
+	}
+    Die = Mix_LoadWAV( "Sound/die.wav" );
+	if( Die == NULL )
+	{
+		printf( "Failed to load die music! SDL_mixer Error: %s\n", Mix_GetError() );
+		success = false;
+	}
+    UsingDrug = Mix_LoadWAV( "Sound/drug.wav" );
+	if( UsingDrug == NULL )
+	{
+		printf( "Failed to load drug music! SDL_mixer Error: %s\n", Mix_GetError() );
+		success = false;
+	}
+
     return success;
 }
 
@@ -391,6 +434,17 @@ void close()
     gHelpGameText.free();
     gExitGameText.free();
 
+    Mix_FreeChunk( Jump );
+	Mix_FreeChunk( Die );
+	Mix_FreeChunk( UsingDrug );
+	Mix_FreeChunk( Click );
+	Jump = NULL;
+	Die = NULL;
+	UsingDrug = NULL;
+	Click = NULL;
+    Mix_FreeMusic( BGSound );
+	BGSound = NULL;
+
 	TTF_CloseFont( gFontSmall );
     TTF_CloseFont( gFontMedium);
     TTF_CloseFont (gFontLarge);
@@ -406,6 +460,7 @@ void close()
 
 	//Quit SDL subsystems
 	TTF_Quit();
+    Mix_Quit();
 	IMG_Quit();
 	SDL_Quit();
 }
@@ -575,6 +630,7 @@ void renderGameObjects()
 }
 
 void renderDrug()
+
 {
     drugText.str("");
     drugText  << "x" << drugCount;
@@ -582,7 +638,7 @@ void renderDrug()
     if (!gDrugTextTexture.loadFromRenderedText(drugText.str().c_str(), textColor,gFontSmall))
         printf("Unable to render drug text texture!\n");
 
-    gDrugTextTexture.render(SCREEN_WIDTH-40,3); // Render góc trái trên cùng (tuỳ chỉnh vị trí)
+    gDrugTextTexture.render(SCREEN_WIDTH-40,8); // Render góc trái trên cùng (tuỳ chỉnh vị trí)
 
     if (isgameover)
     {
@@ -591,9 +647,9 @@ void renderDrug()
 }
 void renderScore()
 {
-    int score = (timer.getTicks() / 100);
+    currentScore = (timer.getTicks() / 100);
     std::stringstream scoreText;
-    scoreText << "Score: " << score;
+    scoreText << "Score: " << currentScore;
     gScoreText.loadFromRenderedText(scoreText.str().c_str(), textColor, gFontSmall);
     gScoreText.render(SCREEN_WIDTH/2-65, 15);
 
@@ -601,35 +657,6 @@ void renderScore()
     hsText << "High Score: " << highScore;
     gHighScoreText.loadFromRenderedText(hsText.str().c_str(), textColor, gFontSmall);
     gHighScoreText.render(SCREEN_WIDTH/2-80, 0); 
-}
-
-
-void eventHandler()
-{
-
-    while (SDL_PollEvent(&e) != 0)
-    {
-        if (e.type == SDL_QUIT)
-            quit = true;
-        else if (e.type == SDL_KEYDOWN && !isgameover)
-        {
-            if (e.key.keysym.sym == SDLK_SPACE)
-                dog.jump();
-
-            if (e.key.keysym.sym == SDLK_f)
-            {
-                isFPressed = true;
-                if (drugCount)  drugCount--;
-            }
-            if (e.key.keysym.sym == SDLK_p)
-            {
-                if (timer.isPaused()) timer.unpause();
-                else timer.pause();
-            }
-        }
-        
-    }
-
 }
 
 void checkCollisions()
@@ -643,7 +670,7 @@ void checkCollisions()
     {
         if (checkCollision(dogCollider, stone.getStoneCollider()))
         {
-            
+            Mix_PlayChannel(-1, Die, 0); 
             isgameover = true;
             timer.pause();
             return;
@@ -655,6 +682,7 @@ void checkCollisions()
     {
         if (checkCollision(dogCollider, bat.getBatCollider()))
         {
+            Mix_PlayChannel(-1, Die, 0); 
             isgameover = true;
             timer.pause();
             return;
@@ -687,33 +715,12 @@ int LoadHighScore(const string& filename) {
     return score;
 }
 
-void saveHighScore(const string& filename,int &score) {
-    std::ofstream file("highscore.txt");
+void saveHighScore(const string& filename, int score) {
+    std::ofstream file(filename);
     if (file.is_open()) {
         file << score;
         file.close();
+    } else {
+        printf("Failed to save high score to %s!\n", filename.c_str());
     }
-}
-
-
-
-void renderAll()
-{
-    SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
-    SDL_RenderClear(gRenderer);
-
-    dayNightInfo.update(timer.getTicks());
-
-    renderBackground(map);
-    renderNightOverlay();
-
-    updateGameLogic();
-
-    renderGameObjects();
-    renderDrug();
-    renderScore();
-    checkCollisions();
-    gSpriteSheetTextureDrug.render(SCREEN_WIDTH-75,0,NULL);
-
-    SDL_RenderPresent(gRenderer);
 }

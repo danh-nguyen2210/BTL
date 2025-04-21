@@ -15,8 +15,9 @@ void StoneManager::updateStones() {
         stones.erase(stones.begin()); 
     }
 
-    if (stones.empty() || stones.back().getStonePos().first < SCREEN_WIDTH && stones.size()<rand()%3) {
+    if (stones.empty() || (SCREEN_WIDTH - stones.back().getStonePos().first > nextStoneDistance)&& stones.size() < rand()%3 ){
         addStone();
+        nextStoneDistance = distanceArray[rand()%5];
     }
 }
 

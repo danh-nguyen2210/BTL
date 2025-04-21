@@ -23,6 +23,7 @@ public:
     void renderDog();
     void renderFlyTimeBar();
     void reset();
+    bool isDogFlying();
 private:
     std::pair<int,int> DogPos;
     float velocityY;

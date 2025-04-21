@@ -88,6 +88,12 @@ extern SDL_Rect Home;
 extern SDL_Rect Resume;
 extern SDL_Rect Again;
 
+extern Mix_Music *BGSound;
+extern Mix_Chunk *Jump;
+extern Mix_Chunk *Click;
+extern Mix_Chunk *Die;
+extern Mix_Chunk *UsingDrug;
+
 
 extern Dog dog;
 extern int dogframe;
@@ -131,6 +137,7 @@ extern bool isPause;
 extern bool isHome;
 extern bool isResume;
 extern bool isAgain;
+extern bool isMuted;
 
 
 
@@ -154,5 +161,5 @@ void eventHandler();
 void renderAll();
 
 int LoadHighScore(const string& filename);
-void saveHighScore(const string& filename,int &score);
+void saveHighScore(const string& filename,int score);
 

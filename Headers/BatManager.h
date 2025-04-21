@@ -21,6 +21,7 @@ private:
     const int MAX_DISTANCE = 150;
     const int SPAWN_OFFSET = 50; 
     const int distanceArray[5] = {200,300,400,500,600};
+    int nextBatDistance = distanceArray[rand() % 5];
 };
 
 #endif

@@ -20,6 +20,7 @@ private:
     const int MAX_DISTANCE = 150;
     const int SPAWN_OFFSET = 10; 
     const int distanceArray[5] = {200,240,280,320,380};
+    int nextStoneDistance = distanceArray[rand() % 5];
 };
 
 #endif

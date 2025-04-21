@@ -10,7 +10,7 @@ class Stone {
 public: 
     static const int STONE_WIDTH = 35;
     static const int STONE_HEIGHT = 42;
-    static const int STONE_VEL = 6;
+   
 
     Stone(int startX = SCREEN_WIDTH);
     void UpdateStonePos();
@@ -25,6 +25,7 @@ private:
     SDL_Rect StoneCollider;
     int stoneFrame = 0;
     string currentStone;
+    int STONE_VEL = 5;
 };
 
 #endif
