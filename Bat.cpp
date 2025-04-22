@@ -9,9 +9,9 @@ Bat::Bat(int startX) : BatPos(startX, ((SCREEN_HEIGHT - 100) *3/4))
     BatCollider = {BatPos.first, BatPos.second, BAT_WIDTH, BAT_HEIGHT};
 }
 
-void Bat::UpdateBatPos()
+void Bat::UpdateBatPos(float speed)
 {
-	BatPos.first-=BAT_VEL;
+	BatPos.first-=speed;
 	BatCollider = {BatPos.first, BatPos.second, BAT_WIDTH, BAT_HEIGHT};
 }
 

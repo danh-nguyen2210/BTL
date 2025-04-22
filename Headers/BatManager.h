@@ -22,6 +22,10 @@ private:
     const int SPAWN_OFFSET = 50; 
     const int distanceArray[5] = {200,300,400,500,600};
     int nextBatDistance = distanceArray[rand() % 5];
+
+    float batSpeed = 5.0f;
+    float speedIncrement = 0.0000005f;
+    float maxBatSpeed = 6.0f;
 };
 
 #endif

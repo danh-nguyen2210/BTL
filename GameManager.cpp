@@ -162,6 +162,7 @@ void handleGameEvents()
         }
     }
 }
+
 void handleBGMusic()
 {
     if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_m)

@@ -7,8 +7,13 @@ StoneManager::StoneManager() {
 }
 
 void StoneManager::updateStones() {
+
+    if (stoneSpeed < maxStoneSpeed) {
+        stoneSpeed += speedIncrement;
+    }
+
     for (int i = 0; i < stones.size(); i++) {
-        stones[i].UpdateStonePos();
+        stones[i].UpdateStonePos(stoneSpeed);
     }
 
     if (!stones.empty() && stones[0].getStonePos().first + Stone::STONE_WIDTH < 0) {

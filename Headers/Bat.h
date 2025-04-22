@@ -15,7 +15,7 @@ public:
 
     
     Bat(int startX = SCREEN_WIDTH-150);
-    void UpdateBatPos();
+    void UpdateBatPos(float speed);
     std::pair<int,int> getBatPos();
     SDL_Rect getBatCollider();
     void renderBat(const string& map);
@@ -24,7 +24,6 @@ private:
     std::pair<int,int> BatPos;
     SDL_Rect BatCollider;
     int batFrame = 0;
-    int BAT_VEL = 5;
 };
 
 #endif

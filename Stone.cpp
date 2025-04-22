@@ -8,15 +8,17 @@ Stone::Stone(int startX) : StonePos(startX, (SCREEN_HEIGHT + 15)*3/4) {
     StoneCollider = {StonePos.first, StonePos.second, STONE_WIDTH, STONE_HEIGHT};
 }
 
-void Stone::UpdateStonePos()
+void Stone::UpdateStonePos(float speed)
 {
-	StonePos.first-=STONE_VEL;
+	StonePos.first-=speed;
 	StoneCollider={StonePos.first,StonePos.second,STONE_WIDTH,STONE_HEIGHT};
 }
+
 std::pair<int,int> Stone :: getStonePos()
 {
 	return StonePos;
 }
+
 void Stone::renderStone(const string& map)
 {
 
@@ -35,14 +37,17 @@ void Stone::renderStone(const string& map)
 		stoneFrame = 0;
 	}
 }
+
 SDL_Rect Stone::getStoneCollider()
 {
 	return StoneCollider;
 }
+
 void Stone::setStone(string map)
 {
 	currentStone=map;
 }
+
 string Stone::getStone()
 {
 	return currentStone;

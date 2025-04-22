@@ -21,6 +21,10 @@ private:
     const int SPAWN_OFFSET = 10; 
     const int distanceArray[5] = {200,240,280,320,380};
     int nextStoneDistance = distanceArray[rand() % 5];
+
+    float stoneSpeed = 5.0f;
+    float speedIncrement = 0.0000005f;
+    float maxStoneSpeed = 6.0f;
 };
 
 #endif

@@ -13,7 +13,7 @@ public:
    
 
     Stone(int startX = SCREEN_WIDTH);
-    void UpdateStonePos();
+    void UpdateStonePos(float speed);
     std::pair<int,int> getStonePos();
     SDL_Rect getStoneCollider();
     void renderStone(const string& map);
@@ -25,7 +25,6 @@ private:
     SDL_Rect StoneCollider;
     int stoneFrame = 0;
     string currentStone;
-    int STONE_VEL = 5;
 };
 
 #endif

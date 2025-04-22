@@ -9,8 +9,12 @@ BatManager::BatManager() {
 
 void BatManager::updateBats() {
    
+    if (batSpeed < maxBatSpeed) {
+        batSpeed += speedIncrement;
+    }
+
     for (int i = 0; i < bats.size(); i++) {
-        bats[i].UpdateBatPos();
+        bats[i].UpdateBatPos(batSpeed);
     }
 
     if (!bats.empty() && bats[0].getBatPos().first + Bat::BAT_WIDTH < 0) {
